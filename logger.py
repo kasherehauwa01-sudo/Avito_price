@@ -4,21 +4,17 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from dataclasses import dataclass, field
 from typing import Deque
 
 
-@dataclass
 class MemoryLogHandler(logging.Handler):
     """Обработчик, сохраняющий последние сообщения логов в памяти."""
 
-    max_records: int = 2000
-    records: Deque[str] = field(default_factory=deque)
-
-    def __post_init__(self) -> None:
-        """Инициализирует базовый logging.Handler после создания dataclass."""
+    def __init__(self, max_records: int = 2000) -> None:
+        """Создает hashable logging.Handler с ограниченным буфером сообщений."""
         super().__init__()
-        self.records = deque(maxlen=self.max_records)
+        self.max_records = max_records
+        self.records: Deque[str] = deque(maxlen=max_records)
 
     def emit(self, record: logging.LogRecord) -> None:
         """Добавляет отформатированное сообщение в буфер логов."""
