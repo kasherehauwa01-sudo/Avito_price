@@ -10,6 +10,12 @@ SPREADSHEET_ID: str = "1s7D7d8alvIpQq2rLBGKR6RT2DJKhNPCd5VPjIhDb5Zg"
 # GID рабочего листа из URL. По нему приложение найдет нужную вкладку.
 WORKSHEET_GID: int = 77890434
 
+# Прямая ссылка на рабочую Google Таблицу для кнопки в интерфейсе.
+GOOGLE_SHEET_URL: str = (
+    "https://docs.google.com/spreadsheets/d/"
+    f"{SPREADSHEET_ID}/edit?gid={WORKSHEET_GID}#gid={WORKSHEET_GID}"
+)
+
 # Файл сервисного аккаунта. Для Streamlit Cloud можно использовать secrets.
 CREDENTIALS_FILE: Path = Path("credentials.json")
 

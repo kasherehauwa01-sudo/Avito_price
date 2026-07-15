@@ -7,6 +7,7 @@ from datetime import date
 
 import streamlit as st
 
+from config import GOOGLE_SHEET_URL
 from excel import read_price_file
 from logger import setup_logger
 from sheets import ImportStats, import_prices
@@ -76,6 +77,7 @@ def main() -> None:
         st.header("Параметры импорта")
         uploaded_file = st.file_uploader("Выберите XLS/XLSX файл", type=("xls", "xlsx"))
         selected_date = st.date_input("Дата новой колонки", value=date.today(), format="DD.MM.YYYY")
+        st.link_button("Перейти в таблицу", GOOGLE_SHEET_URL, use_container_width=True)
         readme_clicked = st.button("ReadMe", use_container_width=True)
 
     if readme_clicked:
