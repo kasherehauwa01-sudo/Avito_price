@@ -32,3 +32,6 @@ GOOGLE_SCOPES: tuple[str, str] = (
 
 # Цвет подсветки изменившейся цены в формате Google Sheets API.
 CHANGED_PRICE_COLOR: dict[str, float] = {"red": 1.0, "green": 0.92, "blue": 0.23}
+
+# Белый фон используется для сброса унаследованной заливки в новой колонке.
+DEFAULT_CELL_COLOR: dict[str, float] = {"red": 1.0, "green": 1.0, "blue": 1.0}

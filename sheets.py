@@ -17,6 +17,7 @@ from gspread import Worksheet
 
 from config import (
     CHANGED_PRICE_COLOR,
+    DEFAULT_CELL_COLOR,
     CREDENTIALS_FILE,
     FIXED_COLUMNS,
     GOOGLE_SCOPES,
@@ -82,9 +83,29 @@ def _format_header_and_changes(
     sheet_id: int,
     new_column_index: int,
     changed_rows: list[int],
+    total_rows: int,
 ) -> None:
     """Форматирует заголовок новой колонки и подсвечивает измененные цены."""
-    requests: list[dict[str, Any]] = [
+    requests: list[dict[str, Any]] = []
+
+    if total_rows > 1:
+        requests.append(
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 1,
+                        "endRowIndex": total_rows,
+                        "startColumnIndex": new_column_index - 1,
+                        "endColumnIndex": new_column_index,
+                    },
+                    "cell": {"userEnteredFormat": {"backgroundColor": DEFAULT_CELL_COLOR}},
+                    "fields": "userEnteredFormat.backgroundColor",
+                }
+            }
+        )
+
+    requests.append(
         {
             "repeatCell": {
                 "range": {
@@ -103,7 +124,7 @@ def _format_header_and_changes(
                 "fields": "userEnteredFormat(horizontalAlignment,textFormat)",
             }
         }
-    ]
+    )
 
     for row_number in changed_rows:
         requests.append(
@@ -152,7 +173,11 @@ def import_prices(
     previous_column_index = last_date_column
 
     logger.info("Создание новой колонки %s...", new_column_letter)
-    worksheet.update_cell(1, new_column_index, selected_date.strftime("%d.%m.%Y"))
+    worksheet.update(
+        range_name=f"{new_column_letter}1",
+        values=[[selected_date.strftime("%d.%m.%Y")]],
+        value_input_option="RAW",
+    )
 
     article_to_row: dict[str, int] = {}
     for row_number, row in enumerate(values[1:], start=2):
@@ -209,11 +234,18 @@ def import_prices(
                 progress_callback(stats.processed / total)
 
     if rows_to_append:
-        worksheet.append_rows(rows_to_append, value_input_option="USER_ENTERED")
+        worksheet.append_rows(rows_to_append, value_input_option="RAW")
 
     if updates:
-        worksheet.batch_update(updates, value_input_option="USER_ENTERED")
+        worksheet.batch_update(updates, value_input_option="RAW")
 
-    _format_header_and_changes(sheets_service, worksheet.id, new_column_index, changed_rows)
+    total_rows = len(values) + len(rows_to_append)
+    _format_header_and_changes(
+        sheets_service,
+        worksheet.id,
+        new_column_index,
+        changed_rows,
+        total_rows,
+    )
     logger.info("Импорт завершен.")
     return stats

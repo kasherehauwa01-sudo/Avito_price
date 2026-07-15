@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
 from io import BytesIO
 from typing import BinaryIO
@@ -73,14 +74,31 @@ def resolve_header(value: object) -> str | None:
     return None
 
 
+def format_price_with_spaces(value: Decimal) -> str:
+    """Форматирует цену с пробелами между тысячами и сотнями."""
+    if value == value.to_integral_value():
+        return f"{int(value):,}".replace(",", " ")
+
+    normalized_value = value.normalize()
+    integer_part, _, decimal_part = format(normalized_value, "f").partition(".")
+    integer_part = f"{int(integer_part):,}".replace(",", " ")
+    return f"{integer_part},{decimal_part}"
+
+
 def clean_price(value: object) -> str:
-    """Возвращает пустую строку для отсутствующей цены или строковое значение цены."""
+    """Возвращает пустую строку для отсутствующей цены или цену с пробелами в тысячах."""
     if pd.isna(value):
         return ""
-    text = str(value).strip()
+
+    text = str(value).strip().replace("\u00a0", " ")
     if text.lower() in {"", "none", "nan"}:
         return ""
-    return text
+
+    normalized_number = text.replace(" ", "").replace(",", ".")
+    try:
+        return format_price_with_spaces(Decimal(normalized_number))
+    except InvalidOperation:
+        return " ".join(text.split())
 
 
 def get_header_mapping(row_values: list[object]) -> dict[int, str]:
