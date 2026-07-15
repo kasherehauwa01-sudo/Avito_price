@@ -149,6 +149,30 @@ def _format_header_and_changes(
     ).execute()
 
 
+def get_articles_for_1c(logger: logging.Logger) -> list[str]:
+    """Считывает артикулы из Google Sheets для выгрузки в XLS-файл 1С."""
+    _, worksheet, _ = connect_to_google(logger)
+    values = worksheet.get_all_values()
+    if not values:
+        raise ValueError("Google таблица пуста: невозможно выгрузить артикулы.")
+
+    headers = values[0]
+    article_column_index = 1
+    if "Артикул" in headers:
+        article_column_index = headers.index("Артикул")
+
+    articles: list[str] = []
+    for row in values[1:]:
+        if len(row) <= article_column_index:
+            continue
+        article = normalize_article(row[article_column_index])
+        if article:
+            articles.append(article)
+
+    logger.info("Подготовлено артикулов для XLS 1С: %s", len(articles))
+    return articles
+
+
 def import_prices(
     excel_data: pd.DataFrame,
     selected_date: date,

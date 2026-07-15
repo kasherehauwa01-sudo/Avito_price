@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import base64
 import time
 from datetime import date
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from config import GOOGLE_SHEET_URL
 from excel import read_price_file
+from export import build_articles_xls
 from logger import setup_logger
-from sheets import ImportStats, import_prices
+from sheets import ImportStats, get_articles_for_1c, import_prices
 
 st.set_page_config(page_title="Обновление цен Google Sheets", page_icon="📊", layout="wide")
 
@@ -78,10 +81,32 @@ def main() -> None:
         uploaded_file = st.file_uploader("Выберите XLS/XLSX файл", type=("xls", "xlsx"))
         selected_date = st.date_input("Дата новой колонки", value=date.today(), format="DD.MM.YYYY")
         st.link_button("Перейти в таблицу", GOOGLE_SHEET_URL, use_container_width=True)
+        download_1c_clicked = st.button("Скачать xls для 1с", use_container_width=True)
         readme_clicked = st.button("ReadMe", use_container_width=True)
 
     if readme_clicked:
         show_readme_dialog()
+
+    if download_1c_clicked:
+        try:
+            logger.info("Подготовка XLS-файла для 1С...")
+            articles = get_articles_for_1c(logger)
+            file_bytes = build_articles_xls(articles)
+            encoded_file = base64.b64encode(file_bytes).decode("ascii")
+            components.html(
+                f"""
+                <a id=\"download-1c-xls\"
+                   download=\"articles_1c.xls\"
+                   href=\"data:application/vnd.ms-excel;base64,{encoded_file}\">
+                </a>
+                <script>document.getElementById('download-1c-xls').click();</script>
+                """,
+                height=0,
+            )
+            logger.info("XLS-файл для 1С сформирован и отправлен на скачивание.")
+        except Exception as exc:  # noqa: BLE001 - ошибка должна попасть в интерфейс.
+            logger.exception("Ошибка формирования XLS-файла для 1С: %s", exc)
+            st.error(str(exc))
 
     progress_bar = st.progress(0, text="Ожидание запуска импорта")
     log_box = st.empty()
